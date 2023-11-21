@@ -11,7 +11,7 @@ with st.sidebar:
     st.header("Use")
     st.caption("Calculates a relative damage index gauging an attack's strength")
     st.header("Usage")
-    st.caption("Fill in the table below")
+    st.caption("Fill in the table on the right")
 
 data = [
     {
