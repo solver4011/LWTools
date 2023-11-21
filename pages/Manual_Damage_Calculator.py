@@ -209,12 +209,12 @@ df = pd.DataFrame(data)
 df.index.name = "Bullet Line"
 if loaded_stats:
     for i in range(6):
-        df['# Bullets'][i] = bulletnums[i]
-        df['Power'][i] = bulletpows[i]
-        df['Eff/Neu/Res'][i] = eles[i]
-        df['% Slice'][i] = slices[i]
-        df['% Hard'][i] = hards[i]
-        df['Yin/Yang'][i] = yinyang[i]
+        df.loc[i, '# Bullets'] = bulletnums[i]
+        df.loc[i, 'Power'] = bulletpows[i]
+        df.loc[i, 'Eff/Neu/Res'] = eles[i]
+        df.loc[i, '% Slice'] = slices[i]
+        df.loc[i, '% Hard'] = hards[i]
+        df.loc[i, 'Yin/Yang'] = yinyang[i]
 stats = st.data_editor(df)
 with st.expander("Character Stats"):
     eff_dmg = st.number_input(label="% Damage to Effective", value=dmgeff)
@@ -270,6 +270,6 @@ def calc_line(line):
 if st.button("Submit Query"):
     total_dmg = 0.0
     for i in range(6):
-        print(calc_line(stats.iloc[i]))
         total_dmg += calc_line(stats.iloc[i])
     st.success(f"Damage Index: {round(total_dmg)}")
+    print("Query Complete") # Log a succcess message
