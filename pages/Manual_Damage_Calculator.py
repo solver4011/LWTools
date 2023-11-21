@@ -1,5 +1,116 @@
 import streamlit as st
 import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+import re
+
+# Scrape the LW of a character
+def get_stats(char_name):
+    NEUTRAL = '9' # Neutral bullets are denoted by 9
+
+    idx = 4 # Choose which spell card to scrape
+
+    x = BeautifulSoup(requests.get(f"http://lostwordchronicle.com/characters/{char_name}").text, 'html.parser')
+    y = x.find_all("div", {"class": "d-inline-flex flex-column"})[idx]
+
+    # First parse all elements
+    eles = [str(y)[x] for x in [m.end() for m in re.finditer('bullet attribute-', str(y))]]
+    # Convert elements into effective, resist, or neutral
+    primary_ele = NEUTRAL
+
+    for i in eles:
+        if i != NEUTRAL:
+            primary_ele = i
+            break
+
+    if primary_ele == NEUTRAL:
+        for idx in range(len(eles)):
+            eles[idx] = "Neu"
+    else:
+        for idx in range(len(eles)):
+            if eles[idx] == NEUTRAL:
+                eles[idx] = "Neu"
+            elif eles[idx] == primary_ele:
+                eles[idx] = "Eff"
+            else:
+                eles[idx] = "Res"
+
+    # Parse yin/yang, 2 is yang and 1 is yin
+    yinyang = [str(y)[x] for x in [m.end() for m in re.finditer('yin-yang-amount-', str(y))]]
+    for idx, i in enumerate(yinyang):
+        yinyang[idx] = 'Yin'
+        if i == '2':
+            yinyang[idx] = 'Yang'
+            
+
+    # Parse bullet numbers
+    scraped_nums = y.find_all("h6")
+    bulletnums = []
+    for i in scraped_nums:
+        if str(i).find("x") != -1:
+            bulletnums.append(int(str(i)[5:-5]))
+
+    # Parse bullet powers
+    z = y.text.replace("\n", "")
+    pwr_idx = [m.end() for m in re.finditer('PWR', z)]
+    acc_idx = [m.start() for m in re.finditer('ACC', z)]
+    bulletpows = []
+
+    for i in range(6):
+        bulletpows.append(float(z[pwr_idx[i] : acc_idx[i]]))
+
+    # Parse scalings
+    y_elems = [y_elem for y_elem in y]
+    bulletlines = []
+    for i in range(1, 13, 2):
+        bulletlines.append(y_elems[i])
+
+    # Parse slice
+    slices = []
+
+    for line in bulletlines:
+        start_idx = [m.end() for m in re.finditer(re.escape('[Slice]: DMG scales with ATK in addition to '), str(line))]
+        end_idx = [m.start() for m in re.finditer('% of Agility.', str(line))]
+        slices.append(0)
+        if len(start_idx) == 1 and len(end_idx) == 1:
+            slices[-1] = int(str(line)[start_idx[0] : end_idx[0]])
+
+    # Parse hard
+    hards = []
+
+    for line in bulletlines:
+        start_idx = [m.end() for m in re.finditer(re.escape('[Hard]: DMG scales with ATK in addition to '), str(line))]
+        end_idx = [m.start() for m in re.finditer('% of DEF.', str(line))]
+        hards.append(0)
+        if len(start_idx) == 1 and len(end_idx) == 1:
+            hards[-1] = int(str(line)[start_idx[0] : end_idx[0]])
+
+    # Parse stats
+    a = x.find_all("div", {"class": "stat-display-value"})
+    yangatk = int(a[1].text)
+    yangdef = int(a[2].text)
+    agi = int(a[3].text)
+    yinatk = int(a[4].text)
+    yindef = int(a[5].text)
+
+    # Finally, parse dmg to eff/res
+    dmgres = 0
+    dmgeff = 0
+
+    y = x.find_all("div", {"id": "body-abilities-0"})[0]
+    start_idx = [m.end() for m in re.finditer(re.escape('DMG to resisted  elements: +'), y.text)]
+
+    if len(start_idx) == 1:
+        z = y.text[start_idx[0] : ]
+        dmgres = float(z[ : z.find("%")])
+    
+    start_idx = [m.end() for m in re.finditer(re.escape('DMG to effective  elements: +'), y.text)]
+
+    if len(start_idx) == 1:
+        z = y.text[start_idx[0] : ]
+        dmgeff = float(z[ : z.find("%")])
+
+    return eles, yinyang, bulletnums, bulletpows, slices, hards, yangatk, yangdef, agi, yinatk, yindef, dmgres, dmgeff
 
 st.set_page_config(
     page_title='LostWord Tools',
@@ -13,136 +124,170 @@ with st.sidebar:
     st.header("Usage")
     st.caption("Fill in the table on the right")
 
-data = [
-    {
-        '# Bullets': 0,
-        'Power': 0.0,
-        '% Card': 0.0,
-        'Eff/Neu/Res': "Eff",
-        '% Slice': 0.0,
-        '% Hard': 0.0,
-        'Killer Hit (Y/N)': "N",
-        'Yin/Yang': "Yang"
-    },
-    {
-        '# Bullets': 0,
-        'Power': 0.0,
-        '% Card': 0.0,
-        'Eff/Neu/Res': "Eff",
-        '% Slice': 0.0,
-        '% Hard': 0.0,
-        'Killer Hit (Y/N)': "N",
-        'Yin/Yang': "Yang"
-    },
-    {
-        '# Bullets': 0,
-        'Power': 0.0,
-        '% Card': 0.0,
-        'Eff/Neu/Res': "Eff",
-        '% Slice': 0.0,
-        '% Hard': 0.0,
-        'Killer Hit (Y/N)': "N",
-        'Yin/Yang': "Yang"
-    },
-    {
-        '# Bullets': 0,
-        'Power': 0.0,
-        '% Card': 0.0,
-        'Eff/Neu/Res': "Eff",
-        '% Slice': 0.0,
-        '% Hard': 0.0,
-        'Killer Hit (Y/N)': "N",
-        'Yin/Yang': "Yang"
-    },
-    {
-        '# Bullets': 0,
-        'Power': 0.0,
-        '% Card': 0.0,
-        'Eff/Neu/Res': "Eff",
-        '% Slice': 0.0,
-        '% Hard': 0.0,
-        'Killer Hit (Y/N)': "N",
-        'Yin/Yang': "Yang"
-    },
-    {
-        '# Bullets': 0,
-        'Power': 0.0,
-        '% Card': 0.0,
-        'Eff/Neu/Res': "Eff",
-        '% Slice': 0.0,
-        '% Hard': 0.0,
-        'Killer Hit (Y/N)': "N",
-        'Yin/Yang': "Yang"
-    }
-]
+with st.form("form"):
+    st.header("Parse and Load Character's LW")
+    st.text("You still need to manually input % Card and Killer Hit (Y/N)")
+    char = st.text_input("Character ([Universe Code] [Character Name], i.e. A6 Yuyuko)")
+    loaded_stats = False
+    yangatkv = 0
+    yangdefv = 0
+    agiv = 0
+    yinatkv = 0
+    yindefv = 0
+    dmgres = 0
+    dmgeff = 0
+    if len(char) != 0:
+        char_link = char.replace(" ", "_")
+        try: 
+            eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff = get_stats(char_link)
+            loaded_stats = True
+        except:
+            raise ValueError(f"{char} is not a valid character.")
 
-df = pd.DataFrame(data)
-df.index.name = "Bullet Line"
 
-stats = st.data_editor(df)
+    st.header("Manual Input")
+    data = [
+        {
+            '# Bullets': 0,
+            'Power': 0.0,
+            '% Card': 0.0,
+            'Eff/Neu/Res': "Eff",
+            '% Slice': 0.0,
+            '% Hard': 0.0,
+            'Killer Hit (Y/N)': "N",
+            'Yin/Yang': "Yang"
+        },
+        {
+            '# Bullets': 0,
+            'Power': 0.0,
+            '% Card': 0.0,
+            'Eff/Neu/Res': "Eff",
+            '% Slice': 0.0,
+            '% Hard': 0.0,
+            'Killer Hit (Y/N)': "N",
+            'Yin/Yang': "Yang"
+        },
+        {
+            '# Bullets': 0,
+            'Power': 0.0,
+            '% Card': 0.0,
+            'Eff/Neu/Res': "Eff",
+            '% Slice': 0.0,
+            '% Hard': 0.0,
+            'Killer Hit (Y/N)': "N",
+            'Yin/Yang': "Yang"
+        },
+        {
+            '# Bullets': 0,
+            'Power': 0.0,
+            '% Card': 0.0,
+            'Eff/Neu/Res': "Eff",
+            '% Slice': 0.0,
+            '% Hard': 0.0,
+            'Killer Hit (Y/N)': "N",
+            'Yin/Yang': "Yang"
+        },
+        {
+            '# Bullets': 0,
+            'Power': 0.0,
+            '% Card': 0.0,
+            'Eff/Neu/Res': "Eff",
+            '% Slice': 0.0,
+            '% Hard': 0.0,
+            'Killer Hit (Y/N)': "N",
+            'Yin/Yang': "Yang"
+        },
+        {
+            '# Bullets': 0,
+            'Power': 0.0,
+            '% Card': 0.0,
+            'Eff/Neu/Res': "Eff",
+            '% Slice': 0.0,
+            '% Hard': 0.0,
+            'Killer Hit (Y/N)': "N",
+            'Yin/Yang': "Yang"
+        }
+    ]
 
-with st.expander("Character Stats"):
-    eff_dmg = st.number_input(label="% Damage to Effective", value=0)
-    res_dmg = st.number_input(label="% Damage to Resist", value=0)
-    yinatk = st.number_input(label="Yin ATK", value=0)
-    yangatk = st.number_input(label="Yang ATK", value=0)
-    agi = st.number_input(label="Agility", value=0)
-    yindef = st.number_input(label="Yin DEF", value=0)
-    yangdef = st.number_input(label="Yang DEF", value=0)
+    df = pd.DataFrame(data)
+    df.index.name = "Bullet Line"
 
-with st.expander("Miscellaneous"):
-    rebirth = st.checkbox(label="Rebirth?", value=False)
-    yinatkb = st.slider(label="Yin ATK Buffs", min_value=-10, max_value=10, value=10)
-    yinatkii = st.slider(label="Yin ATK II Buffs", min_value=-10, max_value=10, value=0)
-    yangatkb = st.slider(label="Yang ATK Buffs", min_value=-10, max_value=10, value=10)
-    yangatkii = st.slider(label="Yang ATK II Buffs", min_value=-10, max_value=10, value=0)
-    agib = st.slider(label="Agility Buffs", min_value=-10, max_value=10, value=10)
-    agiii = st.slider(label="Agility II Buffs", min_value=-10, max_value=10, value=0)
-    yindefb = st.slider(label="Yin DEF Buffs", min_value=-10, max_value=10, value=10)
-    yindefii = st.slider(label="Yin DEF II Buffs", min_value=-10, max_value=10, value=0)
-    yangdefb = st.slider(label="Yang DEF Buffs", min_value=-10, max_value=10, value=10)
-    yangdefii = st.slider(label="Yang DEF II Buffs", min_value=-10, max_value=10, value=0)
-    critatkb = st.slider(label="CRIT ATK Buffs", min_value=-10, max_value=10, value=10)
-    # critatkii = st.slider(label="CRIT ATK II Buffs", min_value=-10, max_value=10, value=0) # Not entirely sure how this works yet
+    if loaded_stats:
+        for i in range(6):
+            df['# Bullets'][i] = bulletnums[i]
+            df['Power'][i] = bulletpows[i]
+            df['Eff/Neu/Res'][i] = eles[i]
+            df['% Slice'][i] = slices[i]
+            df['% Hard'][i] = hards[i]
+            df['Yin/Yang'][i] = yinyang[i]
 
-# Get the multiplier for a certain buff count
-def mult(num):
-    if num < 0:
-        return 1 / (1 + 0.3 * num)
-    else:
-        return 1 + 0.3 * num
+    stats = st.data_editor(df)
 
-def calc_line(line):
-    effresneu = 0.5 * (1 + res_dmg / 100)
-    if line["Eff/Neu/Res"] == "Neu":
-        effresneu = 1.0
-    if line["Eff/Neu/Res"] == "Eff":
-        effresneu = 2.0 * (1 + eff_dmg / 100)
-    
-    killer = 1.0
-    if line["Killer Hit (Y/N)"] == "Y":
-        killer = 1.0 + mult(critatkb)
+    with st.expander("Character Stats"):
+        eff_dmg = st.number_input(label="% Damage to Effective", value=dmgeff)
+        res_dmg = st.number_input(label="% Damage to Resist", value=dmgres)
+        yinatk = st.number_input(label="Yin ATK", value=yinatkv)
+        yangatk = st.number_input(label="Yang ATK", value=yangatkv)
+        agi = st.number_input(label="Agility", value=agiv)
+        yindef = st.number_input(label="Yin DEF", value=yindefv)
+        yangdef = st.number_input(label="Yang DEF", value=yangdefv)
 
-    cur_agi = agi * mult(agiii) / 4 * mult(agib)
-    cur_yinatk = yinatk * mult(yinatkb) / 4 * mult(yinatkii)
-    cur_yangatk = yangatk * mult(yangatkb) / 4 * mult(yangatkii)
-    cur_yindef = yindef * mult(yindefb) / 4 * mult(yindefii)
-    cur_yangdef = yangdef * mult(yangdefb) / 4 * mult(yangdefii)
+    with st.expander("Miscellaneous"):
+        rebirth = st.checkbox(label="Rebirth?", value=False)
+        yinatkb = st.slider(label="Yin ATK Buffs", min_value=-10, max_value=10, value=10)
+        yinatkii = st.slider(label="Yin ATK II Buffs", min_value=-10, max_value=10, value=0)
+        yangatkb = st.slider(label="Yang ATK Buffs", min_value=-10, max_value=10, value=10)
+        yangatkii = st.slider(label="Yang ATK II Buffs", min_value=-10, max_value=10, value=0)
+        agib = st.slider(label="Agility Buffs", min_value=-10, max_value=10, value=10)
+        agiii = st.slider(label="Agility II Buffs", min_value=-10, max_value=10, value=0)
+        yindefb = st.slider(label="Yin DEF Buffs", min_value=-10, max_value=10, value=10)
+        yindefii = st.slider(label="Yin DEF II Buffs", min_value=-10, max_value=10, value=0)
+        yangdefb = st.slider(label="Yang DEF Buffs", min_value=-10, max_value=10, value=10)
+        yangdefii = st.slider(label="Yang DEF II Buffs", min_value=-10, max_value=10, value=0)
+        critatkb = st.slider(label="CRIT ATK Buffs", min_value=-10, max_value=10, value=10)
+        # critatkii = st.slider(label="CRIT ATK II Buffs", min_value=-10, max_value=10, value=0) # Not entirely sure how this works yet
 
-    line_stat = line['% Slice'] / 100 * cur_agi + line['% Hard'] / 100 * cur_yangdef + cur_yangatk
-    if line['Yin/Yang'] == "Yin":
-        line_stat = line['% Slice'] / 100 * cur_agi + line['% Hard'] / 100 * cur_yindef + cur_yinatk
+    # Get the multiplier for a certain buff count
+    def mult(num):
+        if num < 0:
+            return 1 / (1 + 0.3 * num)
+        else:
+            return 1 + 0.3 * num
 
-    level = 1
-    if rebirth:
-        level = 1.4
+    def calc_line(line):
+        effresneu = 0.5 * (1 + res_dmg / 100)
+        if line["Eff/Neu/Res"] == "Neu":
+            effresneu = 1.0
+        if line["Eff/Neu/Res"] == "Eff":
+            effresneu = 2.0 * (1 + eff_dmg / 100)
+        
+        killer = 1.0
+        if line["Killer Hit (Y/N)"] == "Y":
+            killer = 1.0 + mult(critatkb)
 
-    return level * line["# Bullets"] * line["Power"] * (1 + line["% Card"] / 100) * effresneu * killer * line_stat / 1000
+        cur_agi = agi * mult(agiii) / 4 * mult(agib)
+        cur_yinatk = yinatk * mult(yinatkb) / 4 * mult(yinatkii)
+        cur_yangatk = yangatk * mult(yangatkb) / 4 * mult(yangatkii)
+        cur_yindef = yindef * mult(yindefb) / 4 * mult(yindefii)
+        cur_yangdef = yangdef * mult(yangdefb) / 4 * mult(yangdefii)
 
-if st.button('Submit Query'):
-    total_dmg = 0.0
+        line_stat = line['% Slice'] / 100 * cur_agi + line['% Hard'] / 100 * cur_yangdef + cur_yangatk
+        if line['Yin/Yang'] == "Yin":
+            line_stat = line['% Slice'] / 100 * cur_agi + line['% Hard'] / 100 * cur_yindef + cur_yinatk
 
-    for i in range(6):
-        total_dmg += calc_line(stats.iloc[i])
+        level = 1
+        if rebirth:
+            level = 1.4
 
-    st.success(f"Damage Index: {round(total_dmg, 2)}")
+        return level * line["# Bullets"] * line["Power"] * (1 + line["% Card"] / 100) * effresneu * killer * line_stat / 1000
+
+    submit_form = st.form_submit_button("Submit Query")
+
+    if submit_form:
+        total_dmg = 0.0
+
+        for i in range(6):
+            print(calc_line(stats.iloc[i]))
+            total_dmg += calc_line(stats.iloc[i])
+
+        st.success(f"Damage Index: {round(total_dmg)}")
