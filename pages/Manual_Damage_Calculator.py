@@ -5,32 +5,48 @@ from bs4 import BeautifulSoup
 import re
 
 # Scrape the LW of a character
-def get_stats(idx, char_name):
+def get_stats(eff_res_config, idx, char_name):
     NEUTRAL = '9' # Neutral bullets are denoted by 9
     x = BeautifulSoup(requests.get(f"http://lostwordchronicle.com/characters/{char_name}").text, 'html.parser')
     y = x.find_all("div", {"class": "d-inline-flex flex-column"})[idx]
 
     # First parse all elements
     eles = [str(y)[x] for x in [m.end() for m in re.finditer('bullet attribute-', str(y))]]
-    # Convert elements into effective, resist, or neutral
-    primary_ele = NEUTRAL
-
-    for i in eles:
-        if i != NEUTRAL:
-            primary_ele = i
-            break
-
-    if primary_ele == NEUTRAL:
-        for idx in range(len(eles)):
-            eles[idx] = "Neu"
+    
+    # Convert elements into effective, resist, or neutral, using the effective/weakness configuration provided
+    if eff_res_config == "Primary Effective, Resist Others" or eff_res_config == "Primary Effective, Neutral Others" or eff_res_config == "All Effective":
+        # Get primary element
+        primary_ele = NEUTRAL
+        for i in eles:
+            if i != NEUTRAL:
+                primary_ele = i
+                break
+        if primary_ele == NEUTRAL:
+            for idx in range(len(eles)):
+                eles[idx] = "Neu"
+        else:
+            for idx in range(len(eles)):
+                if eles[idx] == NEUTRAL:
+                    eles[idx] = "Neu"
+                elif eles[idx] == primary_ele:
+                    eles[idx] = "Eff"
+                else:
+                    if eff_res_config == "Primary Effective, Resist Others":
+                        eles[idx] = "Res"
+                    elif eff_res_config == "Primary Effective, Neutral Others":
+                        eles[idx] = "Neu"
+                    else:
+                        eles[idx] = "Eff"
     else:
         for idx in range(len(eles)):
-            if eles[idx] == NEUTRAL:
+            if eff_res_config == "All Neutral":
                 eles[idx] = "Neu"
-            elif eles[idx] == primary_ele:
-                eles[idx] = "Eff"
             else:
-                eles[idx] = "Res"
+                # NO lines should still be neutral
+                if eles[idx] == NEUTRAL:
+                    eles[idx] = "Neu"
+                else:
+                    eles[idx] = "Res"
 
     # Parse yin/yang, 2 is yang and 1 is yin
     yinyang = [str(y)[x] for x in [m.end() for m in re.finditer('yin-yang-amount-', str(y))]]
@@ -125,6 +141,7 @@ st.header("Parse and Load Character's LW")
 st.text("You still need to manually input % Card and Killer Hit (Y/N)")
 char = st.text_input("Character ([Universe Code] [Character Name], i.e. A6 Yuyuko)")
 sc_select = st.selectbox("Spell Card to Calculate", ("Spread Shot", "Focus Shot", "SC1", "SC2", "LW"), index=4)
+weak_res_select = st.selectbox("Elemental Weakness/Resist Configuration", ("Primary Effective, Resist Others", "Primary Effective, Neutral Others", "All Effective", "All Neutral", "All Resist"), index=0)
 
 if sc_select == "Spread Shot":
     sc_index = 0
@@ -148,7 +165,7 @@ dmgeff = 0
 if len(char) != 0:
     char_link = char.replace(" ", "_")
     try: 
-        eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff = get_stats(sc_index, char_link)
+        eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff = get_stats(weak_res_select, sc_index, char_link)
         loaded_stats = True
     except:
         raise ValueError(f"{char} is not a valid character.")
