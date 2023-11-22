@@ -123,7 +123,7 @@ with st.sidebar:
 
 st.header("Parse and Load Character's LW")
 st.text("You still need to manually input % Card and Killer Hit (Y/N)")
-char = st.text_input("Character ([Universe Code] [Character Name] [SC #], i.e. A6 Yuyuko)")
+char = st.text_input("Character ([Universe Code] [Character Name], i.e. A6 Yuyuko)")
 sc_select = st.selectbox("Spell Card to Calculate", ("Spread Shot", "Focus Shot", "SC1", "SC2", "LW"), index=4)
 
 if sc_select == "Spread Shot":
