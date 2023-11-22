@@ -7,7 +7,14 @@ import re
 # Scrape the LW of a character
 def get_stats(eff_res_config, idx, char_name):
     NEUTRAL = '9' # Neutral bullets are denoted by 9
-    x = BeautifulSoup(requests.get(f"http://lostwordchronicle.com/characters/{char_name}").text, 'html.parser')
+
+    if char_name.startswith("RE"):
+        is_rebirth = True
+        char_name = char_name[3:]
+        x = BeautifulSoup(requests.get(f"http://lostwordchronicle.com/characters/rebirths/{char_name}").text, 'html.parser')
+    else:
+        is_rebirth = False
+        x = BeautifulSoup(requests.get(f"http://lostwordchronicle.com/characters/{char_name}").text, 'html.parser')
     y = x.find_all("div", {"class": "d-inline-flex flex-column"})[idx]
 
     # First parse all elements
@@ -123,7 +130,7 @@ def get_stats(eff_res_config, idx, char_name):
         z = y.text[start_idx[0] : ]
         dmgeff = float(z[ : z.find("%")])
 
-    return eles, yinyang, bulletnums, bulletpows, slices, hards, yangatk, yangdef, agi, yinatk, yindef, dmgres, dmgeff
+    return eles, yinyang, bulletnums, bulletpows, slices, hards, yangatk, yangdef, agi, yinatk, yindef, dmgres, dmgeff, is_rebirth
 
 st.set_page_config(
     page_title='LostWord Tools',
@@ -139,7 +146,7 @@ with st.sidebar:
 
 st.header("Parse and Load Character's LW")
 st.text("You still need to manually input % Card and Killer Hit (Y/N)")
-char = st.text_input("Character ([Universe Code] [Character Name], i.e. A6 Yuyuko)")
+char = st.text_input("Character ([RE if Rebirth] [Universe Code] [Character Name], i.e. A6 Yuyuko or RE L1 Yuyuko)")
 sc_select = st.selectbox("Spell Card to Calculate", ("Spread Shot", "Focus Shot", "SC1", "SC2", "LW"), index=4)
 weak_res_select = st.selectbox("Elemental Weakness/Resist Configuration", ("Primary Effective, Resist Others", "Primary Effective, Neutral Others", "All Effective", "All Neutral", "All Resist"), index=0)
 
@@ -162,10 +169,11 @@ yinatkv = 0
 yindefv = 0
 dmgres = 0
 dmgeff = 0
+is_rebirth = False
 if len(char) != 0:
     char_link = char.replace(" ", "_")
     try: 
-        eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff = get_stats(weak_res_select, sc_index, char_link)
+        eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff, is_rebirth = get_stats(weak_res_select, sc_index, char_link)
         loaded_stats = True
     except:
         raise ValueError(f"{char} is not a valid character.")
@@ -252,7 +260,7 @@ with st.expander("Character Stats"):
     yindef = st.number_input(label="Yin DEF", value=yindefv)
     yangdef = st.number_input(label="Yang DEF", value=yangdefv)
 with st.expander("Miscellaneous"):
-    rebirth = st.checkbox(label="Rebirth?", value=False)
+    rebirth = st.checkbox(label="Rebirth?", value=is_rebirth)
     yinatkb = st.slider(label="Yin ATK Buffs", min_value=-10, max_value=10, value=10)
     yinatkii = st.slider(label="Yin ATK II Buffs", min_value=-10, max_value=10, value=0)
     yangatkb = st.slider(label="Yang ATK Buffs", min_value=-10, max_value=10, value=10)
