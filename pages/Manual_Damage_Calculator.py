@@ -5,11 +5,8 @@ from bs4 import BeautifulSoup
 import re
 
 # Scrape the LW of a character
-def get_stats(char_name):
+def get_stats(idx, char_name):
     NEUTRAL = '9' # Neutral bullets are denoted by 9
-
-    idx = 4 # Choose which spell card to scrape
-
     x = BeautifulSoup(requests.get(f"http://lostwordchronicle.com/characters/{char_name}").text, 'html.parser')
     y = x.find_all("div", {"class": "d-inline-flex flex-column"})[idx]
 
@@ -126,7 +123,20 @@ with st.sidebar:
 
 st.header("Parse and Load Character's LW")
 st.text("You still need to manually input % Card and Killer Hit (Y/N)")
-char = st.text_input("Character ([Universe Code] [Character Name], i.e. A6 Yuyuko)")
+char = st.text_input("Character ([Universe Code] [Character Name] [SC #], i.e. A6 Yuyuko)")
+sc_select = st.selectbox("Spell Card to Calculate", ("Spread Shot", "Focus Shot", "SC1", "SC2", "LW"), index=4)
+
+if sc_select == "Spread Shot":
+    sc_index = 0
+elif sc_select == "Focus Shot":
+    sc_index = 1
+elif sc_select == "SC1":
+    sc_index = 2
+elif sc_select == "SC2":
+    sc_index = 3
+else:
+    sc_index = 4
+
 loaded_stats = False
 yangatkv = 0
 yangdefv = 0
@@ -138,7 +148,7 @@ dmgeff = 0
 if len(char) != 0:
     char_link = char.replace(" ", "_")
     try: 
-        eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff = get_stats(char_link)
+        eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff = get_stats(sc_index, char_link)
         loaded_stats = True
     except:
         raise ValueError(f"{char} is not a valid character.")
