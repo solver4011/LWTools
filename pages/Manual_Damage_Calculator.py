@@ -7,6 +7,7 @@ import re
 # Scrape the LW of a character
 def get_stats(eff_res_config, idx, char_name):
     NEUTRAL = '9' # Neutral bullets are denoted by 9
+    ELEMENT_ID_TO_NAME = ["", "Sun", "Moon", "Fire", "Water", "Wood", "Metal", "Earth", "Star", "No Element"] # element indices to name
 
     if char_name.startswith("RE"):
         is_rebirth = True
@@ -54,6 +55,8 @@ def get_stats(eff_res_config, idx, char_name):
                     eles[idx] = "Neu"
                 else:
                     eles[idx] = "Res"
+
+    element_info = [ELEMENT_ID_TO_NAME[int(str(y)[x])] for x in [m.end() for m in re.finditer('bullet attribute-', str(y))]] # Get the element names    
 
     # Parse yin/yang, 2 is yang and 1 is yin
     yinyang = [str(y)[x] for x in [m.end() for m in re.finditer('yin-yang-amount-', str(y))]]
@@ -104,6 +107,20 @@ def get_stats(eff_res_config, idx, char_name):
         hards.append(0)
         if len(start_idx) == 1 and len(end_idx) == 1:
             hards[-1] = int(str(line)[start_idx[0] : end_idx[0]])
+    
+    # Get bullet types
+    bullet_types = []
+    for line in bulletlines:
+        start_idx = [m.end() for m in re.finditer(re.escape('/bullet_tag/'), str(line))]
+        end_idx = [m.start() for m in re.finditer(re.escape('.png'), str(line))]
+        bullet_types.append(str(line)[start_idx[0] : end_idx[0]])
+
+    # Combine bullet types and elemnt names in a readable way
+    line_info = ""
+    for i in range(6):
+        line_info += f"{element_info[i]}/{bullet_types[i]}"
+        if i != 5:
+            line_info += "\n"
 
     # Parse stats
     a = x.find_all("div", {"class": "stat-display-value"})
@@ -130,7 +147,7 @@ def get_stats(eff_res_config, idx, char_name):
         z = y.text[start_idx[0] : ]
         dmgeff = float(z[ : z.find("%")])
 
-    return eles, yinyang, bulletnums, bulletpows, slices, hards, yangatk, yangdef, agi, yinatk, yindef, dmgres, dmgeff, is_rebirth
+    return eles, yinyang, bulletnums, bulletpows, slices, hards, yangatk, yangdef, agi, yinatk, yindef, dmgres, dmgeff, is_rebirth, line_info
 
 st.set_page_config(
     page_title='LostWord Tools',
@@ -169,11 +186,12 @@ yinatkv = 0
 yindefv = 0
 dmgres = 0
 dmgeff = 0
+line_info = ""
 is_rebirth = False
 if len(char) != 0:
     char_link = char.replace(" ", "_")
     try: 
-        eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff, is_rebirth = get_stats(weak_res_select, sc_index, char_link)
+        eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff, is_rebirth, line_info = get_stats(weak_res_select, sc_index, char_link)
         loaded_stats = True
     except:
         raise ValueError(f"{char} is not a valid character.")
@@ -306,5 +324,6 @@ if st.button("Submit Query"):
     total_dmg = 0.0
     for i in range(6):
         total_dmg += calc_line(stats.iloc[i])
-    st.success(f"Damage Index: {round(total_dmg)}")
+    st.success(f"Damage Index: {round(total_dmg)}", icon="✅")
+    st.toast(f"Bullet Element/Type Information:\n\n{line_info}", icon="💡")
     print("Query Complete") # Log a succcess message
