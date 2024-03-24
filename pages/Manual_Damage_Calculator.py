@@ -89,8 +89,8 @@ def get_stats(eff_res_config, idx, char_name):
     slices = []
 
     for line in bulletlines:
-        start_idx = [m.end() for m in re.finditer(re.escape('[Slice]: DMG scales with ATK in addition to '), str(line))]
-        end_idx = [m.start() for m in re.finditer('% of Agility.', str(line))]
+        start_idx = [m.end() for m in re.finditer(re.escape('[Slice]: '), str(line))]
+        end_idx = [m.start() for m in re.finditer('% Agility Scale', str(line))]
         slices.append(0)
         if len(start_idx) == 1 and len(end_idx) == 1:
             slices[-1] = int(str(line)[start_idx[0] : end_idx[0]])
@@ -99,8 +99,8 @@ def get_stats(eff_res_config, idx, char_name):
     hards = []
 
     for line in bulletlines:
-        start_idx = [m.end() for m in re.finditer(re.escape('[Hard]: DMG scales with ATK in addition to '), str(line))]
-        end_idx = [m.start() for m in re.finditer('% of DEF.', str(line))]
+        start_idx = [m.end() for m in re.finditer(re.escape('[Hard]: '), str(line))]
+        end_idx = [m.start() for m in re.finditer('% DEF Scale', str(line))]
         hards.append(0)
         if len(start_idx) == 1 and len(end_idx) == 1:
             hards[-1] = int(str(line)[start_idx[0] : end_idx[0]])
