@@ -120,7 +120,7 @@ def get_stats(eff_res_config, idx, char_name):
     for i in range(6):
         line_info += f"{element_info[i]}/{bullet_types[i]}"
         if i != 5:
-            line_info += "\n"
+            line_info += ", "
 
     # Parse stats
     a = x.find_all("div", {"class": "stat-display-value"})
@@ -192,6 +192,7 @@ if len(char) != 0:
     char_link = char.replace(" ", "_")
     try: 
         eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff, is_rebirth, line_info = get_stats(weak_res_select, sc_index, char_link)
+        st.toast(f"Bullet Element/Type Information:\n\n{line_info}", icon="💡")
         loaded_stats = True
     except:
         raise ValueError(f"{char} is not a valid character.")
@@ -325,5 +326,4 @@ if st.button("Submit Query"):
     for i in range(6):
         total_dmg += calc_line(stats.iloc[i])
     st.success(f"Damage Index: {round(total_dmg)}", icon="✅")
-    st.toast(f"Bullet Element/Type Information:\n\n{line_info}", icon="💡")
     print("Query Complete") # Log a succcess message
