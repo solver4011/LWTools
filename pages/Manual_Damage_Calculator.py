@@ -192,7 +192,7 @@ if len(char) != 0:
     char_link = char.replace(" ", "_")
     try: 
         eles, yinyang, bulletnums, bulletpows, slices, hards, yangatkv, yangdefv, agiv, yinatkv, yindefv, dmgres, dmgeff, is_rebirth, line_info = get_stats(weak_res_select, sc_index, char_link)
-        st.toast(f"Bullet Element/Type Information:\n\n{line_info}", icon="💡")
+        st.toast(line_info, icon="💡")
         loaded_stats = True
     except:
         raise ValueError(f"{char} is not a valid character.")
