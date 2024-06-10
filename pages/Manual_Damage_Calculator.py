@@ -135,13 +135,13 @@ def get_stats(eff_res_config, idx, char_name):
     dmgeff = 0
 
     y = x.find_all("div", {"class": "card-body"})[9]
-    start_idx = [m.end() for m in re.finditer(re.escape('WeakIcon.png"/> elements: <span class="text-highlight-buff fw-bold">+'), y.text)]
+    start_idx = [m.end() for m in re.finditer(re.escape('DMG to effective  elements: +'), y.text)]
 
     if len(start_idx) == 1:
         z = y.text[start_idx[0] : ]
         dmgres = float(z[ : z.find("%")])
     
-    start_idx = [m.end() for m in re.finditer(re.escape('ResIcon.png"/> elements: <span class="text-highlight-buff fw-bold">+'), y.text)]
+    start_idx = [m.end() for m in re.finditer(re.escape('DMG to resisted  elements: +'), y.text)]
 
     if len(start_idx) == 1:
         z = y.text[start_idx[0] : ]
