@@ -33,7 +33,7 @@ if st.button('Submit Query'):
         # Try to scrape lostwordchronicle for killer data
         try:
             # Format killer name as a page name
-            name = i.strip().replace(" ", "_").title()
+            name = i.strip().replace(" ", "%20").title()
 
             # Certain words should be lowercase
             LOWERCASE = ["No", "Of", "The"]
