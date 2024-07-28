@@ -139,13 +139,13 @@ def get_stats(eff_res_config, idx, char_name):
 
     if len(start_idx) == 1:
         z = y.text[start_idx[0] : ]
-        dmgres = float(z[ : z.find("%")])
+        dmgeff = float(z[ : z.find("%")])
     
     start_idx = [m.end() for m in re.finditer(re.escape('DMG to resisted  elements: +'), y.text)]
 
     if len(start_idx) == 1:
         z = y.text[start_idx[0] : ]
-        dmgeff = float(z[ : z.find("%")])
+        dmgres = float(z[ : z.find("%")])
 
     return eles, yinyang, bulletnums, bulletpows, slices, hards, yangatk, yangdef, agi, yinatk, yindef, dmgres, dmgeff, is_rebirth, line_info
 
