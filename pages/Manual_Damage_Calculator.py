@@ -62,7 +62,7 @@ def get_stats(eff_res_config, idx, char_name):
     yinyang = [str(y)[x] for x in [m.end() for m in re.finditer('yin-yang-amount-', str(y))]]
     for idx, i in enumerate(yinyang):
         yinyang[idx] = 'Yin'
-        if i == '2':
+        if i == '1':
             yinyang[idx] = 'Yang'
             
 
@@ -170,13 +170,13 @@ weak_res_select = st.selectbox("Elemental Weakness/Resist Configuration", ("Prim
 if sc_select == "Spread Shot":
     sc_index = 0
 elif sc_select == "Focus Shot":
-    sc_index = 1
-elif sc_select == "SC1":
     sc_index = 2
-elif sc_select == "SC2":
-    sc_index = 3
-else:
+elif sc_select == "SC1":
     sc_index = 4
+elif sc_select == "SC2":
+    sc_index = 6
+else:
+    sc_index = 8
 
 loaded_stats = False
 yangatkv = 0
