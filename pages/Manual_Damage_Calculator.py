@@ -16,7 +16,11 @@ def get_stats(eff_res_config, idx, char_name):
     else:
         is_rebirth = False
         x = BeautifulSoup(requests.get(f"http://lostwordchronicle.com/characters/{char_name}").text, 'html.parser')
-    y = x.find_all("div", {"class": "d-inline-flex flex-column"})[idx]
+    y = x.find_all("div", {"class": "d-inline-flex flex-column"})
+    if len(y) == 5:
+        # sometimes there are only 5 entries, sometimes there are 10
+        idx /= 2
+    y = y[idx]
 
     # First parse all elements
     eles = [str(y)[x] for x in [m.end() for m in re.finditer('bullet attribute-', str(y))]]
