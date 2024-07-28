@@ -19,7 +19,7 @@ def get_stats(eff_res_config, idx, char_name):
     y = x.find_all("div", {"class": "d-inline-flex flex-column"})
     if len(y) == 5:
         # sometimes there are only 5 entries, sometimes there are 10
-        idx /= 2
+        idx //= 2
     y = y[idx]
 
     # First parse all elements
