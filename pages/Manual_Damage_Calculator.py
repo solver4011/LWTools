@@ -274,6 +274,7 @@ if loaded_stats:
         df.loc[i, '% Hard'] = hards[i]
         df.loc[i, 'Yin/Yang'] = yinyang[i]
 stats = st.data_editor(df)
+fullbreak = st.checkbox(label="Full Break?", value=False)
 with st.expander("Character Stats"):
     eff_dmg = st.number_input(label="% Damage to Effective", value=dmgeff)
     res_dmg = st.number_input(label="% Damage to Resist", value=dmgres)
@@ -284,6 +285,7 @@ with st.expander("Character Stats"):
     yangdef = st.number_input(label="Yang DEF", value=yangdefv)
 with st.expander("Miscellaneous"):
     rebirth = st.checkbox(label="Rebirth?", value=is_rebirth)
+    st.header("Buffs", divider="gray")
     yinatkb = st.slider(label="Yin ATK Buffs", min_value=-10, max_value=10, value=10)
     yinatkii = st.slider(label="Yin ATK II Buffs", min_value=-10, max_value=10, value=0)
     yangatkb = st.slider(label="Yang ATK Buffs", min_value=-10, max_value=10, value=10)
@@ -295,13 +297,20 @@ with st.expander("Miscellaneous"):
     yangdefb = st.slider(label="Yang DEF Buffs", min_value=-10, max_value=10, value=10)
     yangdefii = st.slider(label="Yang DEF II Buffs", min_value=-10, max_value=10, value=0)
     critatkb = st.slider(label="CRIT ATK Buffs", min_value=-10, max_value=10, value=10)
-    # critatkii = st.slider(label="CRIT ATK II Buffs", min_value=-10, max_value=10, value=0) # Not entirely sure how this works yet
+    critatkii = st.slider(label="CRIT ATK II Buffs", min_value=-10, max_value=10, value=0)
+    st.header("Debuffs", divider="gray")
+    yindefdown = st.slider(label="Yin DEF Debuffs", min_value=-10, max_value=10, value=(10 if fullbreak else 0))
+    yindefiidown = st.slider(label="Yin DEF II Debuffs", min_value=-10, max_value=10, value=0)
+    yangdefdown = st.slider(label="Yang DEF Debuffs", min_value=-10, max_value=10, value=(10 if fullbreak else 0))
+    yangdefiidown = st.slider(label="Yang DEF II Debuffs", min_value=-10, max_value=10, value=0)
+    critdefdown = st.slider(label="Crit DEF Debuffs", min_value=-10, max_value=10, value=0)
+    critdefiidown = st.slider(label="Crit DEF II Debuffs", min_value=-10, max_value=10, value=0)
 # Get the multiplier for a certain buff count
 def mult(num):
     if num < 0:
-        return 1 / (1 + 0.3 * num)
+        return 1 / (1 + 0.3 * max(num, -10))
     else:
-        return 1 + 0.3 * num
+        return 1 + 0.3 * min(num, 10)
 def calc_line(line):
     effresneu = 0.5 * (1 + res_dmg / 100)
     if line["Eff/Neu/Res"] == "Neu":
@@ -311,15 +320,19 @@ def calc_line(line):
     
     killer = 1.0
     if line["Killer Hit (Y/N)"] == "Y":
-        killer = 1.0 + mult(critatkb)
+        killer = 1.0 + mult(critatkb + critdefdown) * mult(critatkii + critdefiidown)
     cur_agi = agi * mult(agiii) / 4 * mult(agib)
     cur_yinatk = yinatk * mult(yinatkb) / 4 * mult(yinatkii)
     cur_yangatk = yangatk * mult(yangatkb) / 4 * mult(yangatkii)
     cur_yindef = yindef * mult(yindefb) / 4 * mult(yindefii)
     cur_yangdef = yangdef * mult(yangdefb) / 4 * mult(yangdefii)
-    line_stat = line['% Slice'] / 100 * cur_agi + line['% Hard'] / 100 * cur_yangdef + cur_yangatk
+    cur_yindebuff = mult(yindefdown) * mult(yindefiidown)
+    cur_yangdebuff = mult(yangdefdown) * mult(yangdefiidown)
+    
     if line['Yin/Yang'] == "Yin":
-        line_stat = line['% Slice'] / 100 * cur_agi + line['% Hard'] / 100 * cur_yindef + cur_yinatk
+        line_stat = (line['% Slice'] / 100 * cur_agi + line['% Hard'] / 100 * cur_yindef + cur_yinatk) * cur_yindebuff
+    else:
+        line_stat = (line['% Slice'] / 100 * cur_agi + line['% Hard'] / 100 * cur_yangdef + cur_yangatk) * cur_yangdebuff
     level = 1
     if rebirth:
         level = 1.4
