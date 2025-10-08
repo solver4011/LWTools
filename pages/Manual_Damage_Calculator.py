@@ -4,6 +4,17 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
+use_explanation = """Calculates a damage index gauging the relative strength of an attack.
+
+The index is RELATIVE, meaning that the exact number doesn't have any meaning. Instead, interpret the indexes relative to each other. An attack with twice the damage index of another attack is twice as strong and will always do twice the damage."""
+
+usage_explanation = """1. Fill in the "Character" input box with the desired character.
+2. Select the spell card to calculate.
+3. Select the weakness/resist configuration. Primary is the attack's first bullet line element, and Others is all other elements. For example, if an attack is mainly Fire and partially Moon, then "Primary Effective, Resist Others" would mean Fire Weakness and Moon Resist.
+4. Fill in the "% Card" column of the table. This is how much the card on the spell card boosts the attack lines' element/bullet type.
+5. Fill in the "Killer Hit" column of the table. This is either "Y" or "N" depending on if the attack line hits killers on the enemy.
+6. (OPTIONAL) Input the buffs/debuffs/Rank II buffs in the "Miscellaneous" dropdown."""
+
 # Scrape the LW of a character
 def get_stats(eff_res_config, idx, char_name):
     NEUTRAL = '9' # Neutral bullets are denoted by 9
@@ -162,12 +173,11 @@ st.set_page_config(
 
 with st.sidebar:
     st.header("Use")
-    st.caption("Calculates a relative damage index gauging an attack's strength")
+    st.caption(use_explanation)
     st.header("Usage")
-    st.caption("Fill in the table on the right")
+    st.caption(usage_explanation)
 
 st.header("Parse and Load Character's LW")
-st.text("You still need to manually input % Card and Killer Hit (Y/N)")
 char = st.text_input("Character ([RE if Rebirth] [Universe Code] [Character Name], i.e. A6 Yuyuko or RE L1 Yuyuko)")
 sc_select = st.selectbox("Spell Card to Calculate", ("Spread Shot", "Focus Shot", "SC1", "SC2", "LW"), index=4)
 weak_res_select = st.selectbox("Elemental Weakness/Resist Configuration", ("Primary Effective, Resist Others", "Primary Effective, Neutral Others", "All Effective", "All Neutral", "All Resist"), index=0)
