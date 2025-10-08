@@ -9,6 +9,7 @@ def get_stats(eff_res_config, idx, char_name):
     NEUTRAL = '9' # Neutral bullets are denoted by 9
     ELEMENT_ID_TO_NAME = ["", "Sun", "Moon", "Fire", "Water", "Wood", "Metal", "Earth", "Star", "No Element"] # element indices to name
 
+    char_name = char_name.replace("#", "hs").replace("&", "amp").replace("-", "min").replace("=", "eq").replace(";", "sc")
     if char_name.startswith("RE"):
         is_rebirth = True
         char_name = char_name[3:]
