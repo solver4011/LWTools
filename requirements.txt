@@ -1,6 +1,6 @@
 bs4
 pandas
 numpy
-streamlit
+streamlit==1.54.0
 streamlit-extras
 altair<5
